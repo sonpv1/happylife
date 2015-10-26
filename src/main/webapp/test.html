@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Happy Life</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <script src="resource/js/jquery-1.10.2.min.js"></script>
+    </script>
+    <script  type="text/javascript">
+        var wsUri = "ws://localhost:8080/happylife/livevideo";
+        var websocket = new WebSocket(wsUri);
+        websocket.binaryType = "arraybuffer";
+        websocket.onerror = function (evt) {
+            onError(evt);
+        };
+        websocket.onMessage = function (evt) {
+            var msg = JSON.parse(evt.data);
+            if (msg['type'] == 'img') {
+                $('#img').attr("src", msg['data']);
+            }
+        };
+
+        function onError(evt) {
+            writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data);
+        }
+        // For testing purposes
+        var output = document.getElementById("output");
+        websocket.onopen = function (evt) {
+            onOpen(evt);
+        };
+
+        function writeToScreen(message) {
+            output.innerHTML += message + "<br>";
+        }
+
+        function onOpen() {
+            writeToScreen("Connected to " + wsUri);
+        }
+        // End test functions
+        function getBase64Image(img) {
+            // Create an empty canvas element
+            var canvas = document.createElement("canvas");
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            // Copy the image contents to the canvas
+            var ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+
+            // Get the data-URL formatted image
+            // Firefox supports PNG and JPEG. You could check img.src to guess the
+            // original format, but be aware the using "image/jpg" will re-encode the image.
+            var dataURL = canvas.toDataURL("image/png");
+            return dataURL;
+        }
+
+        $(document).ready(function () {
+            $("#btn").click(function () {
+                var img = getBase64Image(document.getElementById("file"));
+                alert(document.getElementById("file"));
+            });
+        });
+
+    </script>
+
+    <script src="resource/js/binary.min.js"></script>
+   
+</head>
+<body>
+    <input type="text" id="txt" />
+    <input type="file" id="file" />
+    <button  id="btn">Send Image</button>
+
+    <div id="output"></div>
+    <input type="file" id="fileinput" accept="image/*" capture="camera" />
+     <script>
+        // Connect to Binary.js server
+        var client = new BinaryClient('ws://localhost:8080/javaee7-websocket-chat/livevideo');
+        client.on('stream', function (stream, meta) {
+            // collect stream data
+            var parts = [];
+            stream.on('data', function (data) {
+                parts.push(data);
+            });
+            // when finished, set it as the background image
+            stream.on('end', function () {
+                var url = (window.URL || window.webkitURL).createObjectURL(new Blob(parts));
+                document.body.style.backgroundImage = 'url(' + url + ')';
+            });
+        });
+        // listen for a file being chosen
+        fileinput.addEventListener('change', function (event) {
+            var file = event.target.files[0];
+            client.send(file);
+        }, false);
+    </script>
+</body>
+</html>
